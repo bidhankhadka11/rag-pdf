@@ -268,7 +268,7 @@ def demo_token_budgeting():
     """Demonstrate token budgeting."""
 
     llm = BudgetedLLM(max_tokens=100)
-
+ 
     queries = [
         "What is AI?",  # Within budget
         "Explain " + "very " * 100 + "complex topic",  # Over budget
