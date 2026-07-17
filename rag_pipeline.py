@@ -1,6 +1,7 @@
 # Building RAG Pipelines
 # Complete retrieval-augmented generation implementation
 
+#from hybrid_search.prod_hybrid_search import vectorstore
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
@@ -129,6 +130,49 @@ def demo_basic_rag():
         print(f"A: {answer}\n")
 
 
+def demo_rag_with_source():
+    vectorstore = create_kb()
+    retriever = vectorstore.as_retriever(search_kwargs= {"k": 3})
+
+    prompt = ChatPromptTemplate.from_template(
+        """
+        Answer the question based on the context below. Include which sources you used.
+
+        Context: 
+        {context}
+
+        Question: {question}
+
+        Answer (include sources):
+        """
+    )
+ 
+    def format_docs_with_sources(docs):
+        formatted = []
+        for i, doc in enumerate(docs):
+            source = doc.metadata.get('source', 'unknown')
+            formatted.append(f"[{i+1}] {source}:\n{doc.page_content}")
+        return "\n\n".join(formatted)  
+
+    rag_chain =(
+            {
+                "context": retriever | format_docs_with_sources,
+                "question": RunnablePassthrough(),
+            }
+            | prompt
+            | llm
+            | StrOutputParser()
+            
+        )   
+
+    print("RAG WITH SOURCES: \n") 
+    answer = rag_chain.invoke("What are the core components of LangChain?")
+    print(f"Q: What are the core components of LangChain?\n")
+    print(f"A: {answer}")
+
+
+
 if __name__ == "__main__":
-    demo_basic_rag()
+    #demo_basic_rag()
+    demo_rag_with_source()
 
